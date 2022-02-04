@@ -17,12 +17,14 @@ import (
 	"strings"
 )
 
+// Store session store
 type Store struct {
 	tableName    string
 	codecs       []securecookie.Codec
 	dynamoClient *dynamodb.Client
 }
 
+// storeRecord type of DynamoDB record
 type storeRecord struct {
 	ID      string
 	Values  string
@@ -42,6 +44,7 @@ var (
 	errDynamoDeleteItem   = errors.New("failed to delete item from dynamodb")
 )
 
+// NewStore  create a new session store
 func NewStore(tableName string, cfg aws.Config, keyPairs ...[]byte) *Store {
 	return &Store{
 		tableName:    tableName,
@@ -50,10 +53,12 @@ func NewStore(tableName string, cfg aws.Config, keyPairs ...[]byte) *Store {
 	}
 }
 
+// Get get a session from DynamoDB
 func (s *Store) Get(r *http.Request, sessionName string) (*sessions.Session, error) {
 	return sessions.GetRegistry(r).Get(s, sessionName)
 }
 
+// New create a new session
 func (s *Store) New(r *http.Request, sessionName string) (*sessions.Session, error) {
 	cookie, err := r.Cookie(sessionName)
 	if err != nil {
@@ -70,6 +75,7 @@ func (s *Store) New(r *http.Request, sessionName string) (*sessions.Session, err
 	return s.loadFromDynamo(r.Context(), sessionID)
 }
 
+// Save save a session in DynamoDB
 func (s *Store) Save(r *http.Request, w http.ResponseWriter, session *sessions.Session) error {
 	if session.Options.MaxAge < 0 {
 		if err := s.deleteFromDynamo(r.Context(), session.ID); err != nil {
@@ -93,6 +99,7 @@ func (s *Store) Save(r *http.Request, w http.ResponseWriter, session *sessions.S
 	return nil
 }
 
+// loadFromDynamo load a session record to be specified by ID
 func (s *Store) loadFromDynamo(ctx context.Context, sessionID string) (*sessions.Session, error) {
 	result, err := s.dynamoClient.GetItem(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(s.tableName),
@@ -126,6 +133,7 @@ func (s *Store) loadFromDynamo(ctx context.Context, sessionID string) (*sessions
 	}, nil
 }
 
+// storeToDynamo store a session record
 func (s *Store) storeToDynamo(ctx context.Context, session *sessions.Session) error {
 	buf := new(bytes.Buffer)
 	if err := gob.NewEncoder(buf).Encode(session.Values); err != nil {
@@ -150,6 +158,7 @@ func (s *Store) storeToDynamo(ctx context.Context, session *sessions.Session) er
 	return nil
 }
 
+// deleteFromDynamo delete a session record to be specified by ID
 func (s *Store) deleteFromDynamo(ctx context.Context, sessionID string) error {
 	_, err := s.dynamoClient.DeleteItem(ctx, &dynamodb.DeleteItemInput{
 		TableName: aws.String(s.tableName),
