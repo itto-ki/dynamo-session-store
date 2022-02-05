@@ -34,7 +34,6 @@ type storeRecord struct {
 var (
 	errIllegalSession     = errors.New("illegal session")
 	errEncodeCookieValue  = errors.New("failed to encode a cookie value")
-	errDecodeCookieValue  = errors.New("failed to decode a cookie value")
 	errEncodeSessionValue = errors.New("failed to encode session values")
 	errDecodeSessionValue = errors.New("failed to decode session values")
 	errMarshalRecord      = errors.New("failed to marshal a dynamodb record")
@@ -58,21 +57,32 @@ func (s *Store) Get(r *http.Request, sessionName string) (*sessions.Session, err
 	return sessions.GetRegistry(r).Get(s, sessionName)
 }
 
-// New create a new session
+// New create a new session or load a session from DynamoDB
 func (s *Store) New(r *http.Request, sessionName string) (*sessions.Session, error) {
-	cookie, err := r.Cookie(sessionName)
-	if err != nil {
-		newSession := sessions.NewSession(s, sessionName)
-		newSession.ID = strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32)), "=")
-		newSession.IsNew = true
-		return newSession, nil
+	if cookie, errCookie := r.Cookie(sessionName); errCookie == nil {
+		var sessionID string
+		if err := securecookie.DecodeMulti(sessionName, cookie.Value, &sessionID, s.codecs...); err != nil {
+			return s.newSession(sessionName), nil
+		}
+		session, err := s.loadFromDynamo(r.Context(), sessionID)
+		if err != nil {
+			if errors.Is(err, errDynamoGetItem) {
+				return s.newSession(sessionName), nil
+			}
+		}
+		session.IsNew = false
+		return session, nil
 	}
+	return s.newSession(sessionName), nil
+}
 
-	var sessionID string
-	if err := securecookie.DecodeMulti(sessionName, cookie.Value, &sessionID, s.codecs...); err != nil {
-		return nil, errDecodeCookieValue
-	}
-	return s.loadFromDynamo(r.Context(), sessionID)
+// newSession create a new session
+func (s *Store) newSession(sessionName string) *sessions.Session {
+	session := sessions.NewSession(s, sessionName)
+	session.ID = strings.TrimRight(base32.StdEncoding.EncodeToString(securecookie.GenerateRandomKey(32)), "=")
+	session.Options = &sessions.Options{}
+	session.IsNew = true
+	return session
 }
 
 // Save save a session in DynamoDB
