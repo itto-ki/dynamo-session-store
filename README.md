@@ -2,8 +2,10 @@
 
 dynamo-session-store is HTTP session store with DynamoDB for Gorilla Toolkit
 
+[![Test](https://github.com/itto-ki/dynamo-session-store/actions/workflows/test_lint.yml/badge.svg)](https://github.com/itto-ki/dynamo-session-store/actions/workflows/test_lint.yml)
 
 ## Features
+
 - [x] Secure Cookie
 - [x] Compatible with [AWS SDK for Go V2](https://aws.github.io/aws-sdk-go-v2/)
 
@@ -11,9 +13,10 @@ dynamo-session-store is HTTP session store with DynamoDB for Gorilla Toolkit
 
 You have to create a table having a partition key named `id`
 
-`id` is typed by string.
+Type of `id` is string.
 
 ## Examples
+
 ```go
 import (
     "github.com/aws/aws-sdk-go-v2/config"
@@ -49,4 +52,5 @@ if err = session.Save(req, rsp); err != nil {
 ```
 
 ## License
+
 MIT licensed. See the LICENSE file for details.
