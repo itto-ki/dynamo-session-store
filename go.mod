@@ -1,4 +1,4 @@
-module dynamo-session-store
+module github.com/itto-ki/dynamo-session-store
 
 go 1.17
 
