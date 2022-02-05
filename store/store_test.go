@@ -273,7 +273,6 @@ func TestCookieStoreMapPanic(t *testing.T) {
 	}
 	w := httptest.NewRecorder()
 
-	//session := NewSession(store, "hello")
 	session, err := store.New(req, "hello")
 	if err != nil {
 		t.Fatal("failed to create a new session", err)
