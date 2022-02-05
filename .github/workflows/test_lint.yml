@@ -1,0 +1,38 @@
+name: Test & Lint
+
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup DynamoDB Local
+        uses: rrainn/dynamodb-action@v2.0.0
+        with:
+          port: 8000
+          cors: '*'
+        env:
+          AWS_ACCESS_KEY_ID: "dummy"
+          AWS_SECRET_ACCESS_KEY: "dummy"
+
+      - name: setup
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: lint
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: latest
+
+      - name: test
+        run: go test ./...
+        env:
+          ENV: "test"
+          AWS_ACCESS_KEY_ID: "dummy"
+          AWS_SECRET_ACCESS_KEY: "dummy"

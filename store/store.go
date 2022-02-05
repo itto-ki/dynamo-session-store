@@ -1,4 +1,4 @@
-package utils
+package store
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
@@ -43,7 +44,7 @@ var (
 	errDynamoDeleteItem   = errors.New("failed to delete item from dynamodb")
 )
 
-// NewStore  create a new session store
+// NewStore create a new session store
 func NewStore(tableName string, cfg aws.Config, keyPairs ...[]byte) *Store {
 	return &Store{
 		tableName:    tableName,
@@ -163,6 +164,7 @@ func (s *Store) storeToDynamo(ctx context.Context, session *sessions.Session) er
 		},
 	})
 	if err != nil {
+		fmt.Println(err)
 		return errDynamoPutItem
 	}
 	return nil
